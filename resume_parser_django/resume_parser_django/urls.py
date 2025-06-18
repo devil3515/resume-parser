@@ -28,6 +28,8 @@ urlpatterns = [
     path("process", views.process_resume, name='process_resume'),
     # API endpoints for additional functionality
     path("api/", include('resume_api.urls')),
+    # User management endpoints
+    path("api/users/", include('users.urls')),
 ]
 
 # Serve media files during development
