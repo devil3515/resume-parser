@@ -1,0 +1,7 @@
+Django==5.2.3
+djangorestframework==3.16.0
+django-cors-headers==4.7.0
+python-dotenv==1.0.0
+pypdf==4.0.1
+requests==2.31.0
+groq==0.4.2 
