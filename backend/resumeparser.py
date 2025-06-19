@@ -1,82 +1,3 @@
-# import os
-# import re
-# import json
-# from dotenv import load_dotenv
-# import requests
-
-# load_dotenv()
-
-# ##GROQ api reference
-# GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-# GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-
-# ##Set up the Ats Extractor
-
-# def ats_extractor(resume_data, model="llama3-70b-8192"):
-#     headers = {
-#         "Authorization": f"Bearer {GROQ_API_KEY}",
-#         "Content-Type": "application/json"
-#     }
-
-#     prompt = '''
-#     You are an AI bot designed to act as a professional for parsing resumes. You are given with resume and your job is to extract the following information from the resume:
-#     - name
-#     - email
-#     - phone
-#     - linkedin
-#     - portfolio (if available)
-#     - summary (2-3 sentence professional summary)
-#     - skills (as a list and include all the points in the skills section)
-#     - experience_title
-#     - company
-#     - start_date (if available)
-#     - end_date (if available)
-#     - experience_detail (main bullet point or summary of experience)
-#     - degree
-#     - university
-#     - Projects (if available)
-#     - project_title (if available)
-#     - project_detail (if available)
-#     - graduation_year (if available)
-#     Give the extracted information in json format only.
-#     Resume text:
-#     \"\"\"{resume_data}\"\"\"
-#     '''
-
-#     payload = {
-#         "model": model,
-#         "messages": [
-#             {"role": "system", "content": "You are a helpful assistant that parses resumes into structured data."},
-#             {"role": "user", "content": prompt.format(resume_data=resume_data)}
-#         ],
-#         "temperature": 0.2
-#     }
-
-#     response = requests.post(GROQ_API_URL, headers=headers, json=payload)
-    
-#     if response.status_code == 200:
-#         try:
-#             result = response.json()  # Parse the response as JSON
-#             content = result['choices'][0]['message']['content']
-
-#             # Clean up the response by removing unwanted text
-#             content = re.sub(r"Here is the extracted information in JSON format:```", "", content)
-#             content = re.sub(r"```", "", content)
-
-#             # Now parse the content as JSON
-#             if content.startswith("{") and content.endswith("}"):
-#                 parsed_data = json.loads(content)
-#                 return parsed_data
-#             else:
-#                 return {"error": "Invalid JSON format", "raw": content}
-#         except json.JSONDecodeError:
-#             return {"error": "Failed to parse JSON", "raw": response.text}
-#     else:
-#         return {"error": response.status_code, "message": response.text}
-
-
-
-
 import os
 import re
 import json
@@ -96,7 +17,7 @@ def ats_extractor(resume_data, model="llama3-70b-8192"):
     }
 
     prompt = '''
-    You are an AI bot designed to act as a professional for parsing resumes. You are given with resume and your job is to extract the following information from the resume:
+    You are an AI bot designed to act as a professional for parsing resumes. You are given a resume and your job is to extract the following information:
     - name
     - email
     - phone
@@ -112,12 +33,14 @@ def ats_extractor(resume_data, model="llama3-70b-8192"):
     - experience_detail (main bullet point or summary of experience)
     - degree
     - university
-    - Projects (if available)
-    - project_title (if available)
-    - project_detail (if available)
-    - project technologies (if available)
     - graduation_year (if available)
-    Give the extracted information in json format only.
+    - Projects (if available): list of projects with
+        - project_title
+        - project_detail
+        - project_technologies (if available)
+    
+    Return only a valid JSON object. Do not include any commentary, notes, or markdown formatting.
+    
     Resume text:
     \"\"\"{resume_data}\"\"\"
     '''
@@ -125,7 +48,7 @@ def ats_extractor(resume_data, model="llama3-70b-8192"):
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "You are a helpful assistant that parses resumes into structured data."},
+            {"role": "system", "content": "You are a helpful assistant that parses resumes into structured JSON data."},
             {"role": "user", "content": prompt.format(resume_data=resume_data)}
         ],
         "temperature": 0.2
@@ -134,35 +57,31 @@ def ats_extractor(resume_data, model="llama3-70b-8192"):
     try:
         response = requests.post(GROQ_API_URL, headers=headers, json=payload)
         
-        # Check if the request was successful
         if response.status_code == 200:
-            result = response.json()  # Parse the response as JSON
-            content = result['choices'][0]['message']['content']
+            result = response.json()
+            content = result['choices'][0]['message']['content'].strip()
 
-            # Remove unwanted text using regex
-            # Remove 'Here is the extracted information in JSON format:' and any leading/trailing spaces/newlines
-            content = re.sub(r"Here is the extracted information in JSON format:\s*```", "", content)
-            content = re.sub(r"```", "", content)
+            # Remove any markdown code block formatting
+            content = re.sub(r"^```(json)?", "", content, flags=re.IGNORECASE).strip()
+            content = re.sub(r"```$", "", content).strip()
 
-            # Clean up any leading or trailing whitespace or newlines
-            content = content.strip()
-
-            # Ensure we only return valid JSON
-            if content.startswith("{") and content.endswith("}"):
-                parsed_data = json.loads(content)
-                return parsed_data
+            # Try to isolate valid JSON block using regex if needed
+            match = re.search(r"\{[\s\S]*\}", content)
+            if match:
+                json_string = match.group()
+                try:
+                    parsed_data = json.loads(json_string)
+                    return parsed_data
+                except json.JSONDecodeError as e:
+                    return {"error": "Failed to parse JSON", "raw": json_string, "message": str(e)}
             else:
-                # Return the raw response if it doesn't look like valid JSON
-                return {"error": "Invalid JSON format", "raw": content}
+                return {"error": "No valid JSON object found", "raw": content}
+
         else:
-            # Handle non-200 status codes
             return {"error": f"API request failed with status code {response.status_code}", "message": response.text}
 
     except requests.exceptions.RequestException as e:
-        # Handle errors related to the request itself
         return {"error": "Request failed", "message": str(e)}
 
     except json.JSONDecodeError:
-        # Handle errors related to parsing the JSON
         return {"error": "Failed to parse JSON from response", "raw": response.text}
-
