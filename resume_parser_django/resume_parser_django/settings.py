@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "resume_api",
     "users",
+    "payments",
     "rest_framework_simplejwt",
 ]
 
@@ -171,3 +172,8 @@ SIMPLE_JWT = {
 
 # Add this line after DEFAULT_AUTO_FIELD setting
 AUTH_USER_MODEL = 'users.User'
+
+# Stripe Configuration
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
