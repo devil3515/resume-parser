@@ -41,7 +41,7 @@ const Index = () => {
     formData.append('pdf_doc', file);
 
     try {
-      const res = await fetch('https://resume-parser-bxzq.onrender.com/process', {
+      const res = await fetch('http://127.0.0.1:8001/process', {
         method: 'POST',
         body: formData,
       });

@@ -4,11 +4,11 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view, parser_classes
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework import status
 from pypdf import PdfReader
-from .resume_parser import ats_extractor
+from .resume_parser import ats_extractor, match_analyzer
 from django.conf import settings
 
 
@@ -87,3 +87,33 @@ def _read_file_from_path(path):
     for page in reader.pages:
         data += page.extract_text()
     return data
+
+
+@api_view(['POST'])
+@parser_classes([JSONParser])
+def match_analysis(request):
+    """Analyze how well a resume matches a job description"""
+    
+    try:
+        data = request.data
+        
+        # Validate required fields
+        if 'resume_data' not in data or 'job_description' not in data:
+            return Response(
+                {"error": "Both resume_data and job_description are required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        resume_data = data['resume_data']
+        job_description = data['job_description']
+        
+        # Perform match analysis using LLM
+        match_result = match_analyzer(resume_data, job_description)
+        
+        return Response(match_result, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {"error": "Failed to analyze match", "message": str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
