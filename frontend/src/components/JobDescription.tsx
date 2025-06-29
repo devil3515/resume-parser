@@ -8,9 +8,10 @@ import { FileText, Zap } from 'lucide-react';
 interface JobDescriptionProps {
   onProcess: (jobDescription: string) => void;
   isLoading: boolean;
+  parsedData: any;
 }
 
-const JobDescription: React.FC<JobDescriptionProps> = ({ onProcess, isLoading }) => {
+const JobDescription: React.FC<JobDescriptionProps> = ({ onProcess, isLoading, parsedData }) => {
   const [jobDescription, setJobDescription] = useState('');
 
   const handleProcess = () => {
@@ -28,26 +29,28 @@ const JobDescription: React.FC<JobDescriptionProps> = ({ onProcess, isLoading })
             variant="outline"
             size="sm"
             className="flex items-center gap-1"
-            onClick={() => {
-              // This would be replaced with actual sample data in a real application
-              setJobDescription(`Senior Frontend Developer
+            onClick={async () => {
+              if (!parsedData) return;
 
-We are looking for a Senior Frontend Developer to join our team. The ideal candidate should have:
+              try {
+                const res = await fetch('http://127.0.0.1:8000/generate-sample-jd', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ resume: parsedData })
+                });
 
-Requirements:
-- 5+ years of experience with React
-- Strong TypeScript skills
-- Experience with responsive design
-- Knowledge of modern frontend tooling
-- Experience with state management libraries
-- Ability to optimize for performance
-
-Responsibilities:
-- Develop new user-facing features
-- Build reusable components and libraries
-- Optimize applications for maximum speed and scalability
-- Collaborate with backend developers and designers
-`);
+                const data = await res.json();
+                if (data.job_description) {
+                  setJobDescription(data.job_description);
+                } else {
+                  alert("Failed to generate job description");
+                }
+              } catch (err) {
+                console.error("JD generation error:", err);
+                alert("Error generating sample job description.");
+              }
             }}
           >
             <FileText className="h-4 w-4" />

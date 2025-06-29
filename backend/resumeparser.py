@@ -1,82 +1,3 @@
-# import os
-# import re
-# import json
-# from dotenv import load_dotenv
-# import requests
-
-# load_dotenv()
-
-# ##GROQ api reference
-# GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-# GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-
-# ##Set up the Ats Extractor
-
-# def ats_extractor(resume_data, model="llama3-70b-8192"):
-#     headers = {
-#         "Authorization": f"Bearer {GROQ_API_KEY}",
-#         "Content-Type": "application/json"
-#     }
-
-#     prompt = '''
-#     You are an AI bot designed to act as a professional for parsing resumes. You are given with resume and your job is to extract the following information from the resume:
-#     - name
-#     - email
-#     - phone
-#     - linkedin
-#     - portfolio (if available)
-#     - summary (2-3 sentence professional summary)
-#     - skills (as a list and include all the points in the skills section)
-#     - experience_title
-#     - company
-#     - start_date (if available)
-#     - end_date (if available)
-#     - experience_detail (main bullet point or summary of experience)
-#     - degree
-#     - university
-#     - Projects (if available)
-#     - project_title (if available)
-#     - project_detail (if available)
-#     - graduation_year (if available)
-#     Give the extracted information in json format only.
-#     Resume text:
-#     \"\"\"{resume_data}\"\"\"
-#     '''
-
-#     payload = {
-#         "model": model,
-#         "messages": [
-#             {"role": "system", "content": "You are a helpful assistant that parses resumes into structured data."},
-#             {"role": "user", "content": prompt.format(resume_data=resume_data)}
-#         ],
-#         "temperature": 0.2
-#     }
-
-#     response = requests.post(GROQ_API_URL, headers=headers, json=payload)
-    
-#     if response.status_code == 200:
-#         try:
-#             result = response.json()  # Parse the response as JSON
-#             content = result['choices'][0]['message']['content']
-
-#             # Clean up the response by removing unwanted text
-#             content = re.sub(r"Here is the extracted information in JSON format:```", "", content)
-#             content = re.sub(r"```", "", content)
-
-#             # Now parse the content as JSON
-#             if content.startswith("{") and content.endswith("}"):
-#                 parsed_data = json.loads(content)
-#                 return parsed_data
-#             else:
-#                 return {"error": "Invalid JSON format", "raw": content}
-#         except json.JSONDecodeError:
-#             return {"error": "Failed to parse JSON", "raw": response.text}
-#     else:
-#         return {"error": response.status_code, "message": response.text}
-
-
-
-
 import os
 import re
 import json
@@ -96,7 +17,7 @@ def ats_extractor(resume_data, model="llama3-70b-8192"):
     }
 
     prompt = '''
-    You are an AI bot designed to act as a professional for parsing resumes. You are given with resume and your job is to extract the following information from the resume:
+   You are an AI bot designed to parse resumes. Extract the following fields in **valid JSON format only**. Do not add explanations, code blocks, or any trailing notes. Return only a JSON object.
     - name
     - email
     - phone
@@ -165,4 +86,3 @@ def ats_extractor(resume_data, model="llama3-70b-8192"):
     except json.JSONDecodeError:
         # Handle errors related to parsing the JSON
         return {"error": "Failed to parse JSON from response", "raw": response.text}
-
