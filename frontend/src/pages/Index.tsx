@@ -41,7 +41,7 @@ const Index = () => {
     formData.append('pdf_doc', file);
 
     try {
-      const res = await fetch('http://127.0.0.1:8001/process', {
+      const res = await fetch('https://resume-parser-bxzq.onrender.com/process', {
         method: 'POST',
         body: formData,
       });
@@ -83,7 +83,7 @@ const Index = () => {
     formData.append('job_description', jobDescription);
   
     try {
-      const res = await fetch('http://127.0.0.1:8000/analyze-match', {
+      const res = await fetch('https://resume-parser-bxzq.onrender.com/analyze-match', {
         method: 'POST',
         body: formData,
       });
